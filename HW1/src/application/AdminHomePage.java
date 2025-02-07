@@ -1,47 +1,122 @@
 package application;
 
+import databasePart1.DatabaseHelper;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
-
+import java.sql.SQLException;
 
 /**
- * AdminPage class represents the user interface for the admin user.
- * This page displays a simple welcome message for the admin.
+ * AdminHomePage - Admin dashboard for managing users.
  */
-
 public class AdminHomePage {
-	/**
-     * Displays the admin page in the provided primary stage.
-     * @param primaryStage The primary stage where the scene will be displayed.
-     */
+    private final DatabaseHelper databaseHelper;
+    private final String username;
+
+    public AdminHomePage(DatabaseHelper databaseHelper, String username) {
+        this.databaseHelper = databaseHelper;
+        this.username = username;
+    }
+
     public void show(Stage primaryStage) {
-    	VBox layout = new VBox();
-    	
-	    layout.setStyle("-fx-alignment: center; -fx-padding: 20;");
-	    
-	    // label to display the welcome message for the admin
-	    Label adminLabel = new Label("Hello, Admin!");
-	    
-	    adminLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
-	    
-	 // button to proceed to the main admin screen
+        System.out.println("✅ AdminHomePage.show() was called!");
+
+        // Create the main layout with spacing and padding.
+        VBox layout = new VBox(10);
+        layout.setStyle("-fx-alignment: center; -fx-padding: 20;");
+
+        // Admin Welcome Label
+        Label adminLabel = new Label("Hello, Admin " + username + "!");
+        adminLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
+
+        // Continue Button to navigate to the AdminCommandsPage.
         Button continueButton = new Button("Continue");
         continueButton.setOnAction(e -> {
-            // call another class that shows the main admin screen
-           AdminCommandsPage mainPage = new AdminCommandsPage();
-            mainPage.show(primaryStage);
+            System.out.println("🟡 Navigating to AdminCommandsPage...");
+            new AdminCommandsPage(databaseHelper, username).show(primaryStage);
         });
 
-	    layout.getChildren().addAll(adminLabel, continueButton);
-	    Scene adminScene = new Scene(layout, 800, 400);
+        // --- Invitation Code Generation Section ---
+        TextField roleField = new TextField();
+        roleField.setPromptText("Enter Role (user/admin)");
 
-	    // Set the scene to primary stage
-	    primaryStage.setScene(adminScene);
-	    primaryStage.setTitle("Admin Page");
-	    
+        TextField hoursValidField = new TextField();
+        hoursValidField.setPromptText("Valid Hours");
+
+        Button generateInviteButton = new Button("Generate Invitation Code");
+        Label inviteCodeLabel = new Label();
+
+        generateInviteButton.setOnAction(a -> {
+            String role = roleField.getText().trim();
+            try {
+                int hours = Integer.parseInt(hoursValidField.getText().trim());
+                if (!role.equalsIgnoreCase("user") && !role.equalsIgnoreCase("admin")) {
+                    inviteCodeLabel.setText("⚠️ Invalid role! Must be 'user' or 'admin'.");
+                    return;
+                }
+                String invitationCode = databaseHelper.generateInvitationCode(role, hours);
+                inviteCodeLabel.setText("✅ Invite Code: " + invitationCode);
+            } catch (NumberFormatException ex) {
+                inviteCodeLabel.setText("⚠️ Please enter a valid number for hours.");
+            }
+        });
+
+        // --- Reset User Password Section ---
+        TextField usernameField = new TextField();
+        usernameField.setPromptText("Enter Username for Password Reset");
+        usernameField.setMaxWidth(250);
+
+        Button resetPasswordButton = new Button("Generate One-Time Password");
+        Label resetPasswordLabel = new Label();
+
+        resetPasswordButton.setOnAction(a -> {
+            String userToReset = usernameField.getText().trim();
+            if (userToReset.isEmpty()) {
+                resetPasswordLabel.setText("⚠️ Username cannot be empty!");
+                return;
+            }
+            try {
+                if (!databaseHelper.doesUserExist(userToReset)) {
+                    resetPasswordLabel.setText("⚠️ User does not exist!");
+                    return;
+                }
+                String oneTimePassword = databaseHelper.generateOneTimePassword(userToReset);
+                resetPasswordLabel.setText("✅ OTP for " + userToReset + ": " + oneTimePassword);
+            } catch (SQLException e) {
+                resetPasswordLabel.setText("⚠️ Database error: " + e.getMessage());
+                e.printStackTrace();
+            }
+        });
+
+        // --- Logout Button ---
+        // Using the SetupLoginSelectionPage so the admin returns to the login/setup selection screen.
+        Button logoutButton = new Button("Logout");
+        logoutButton.setOnAction(a -> {
+            System.out.println("🔴 Logging out...");
+            new SetupLoginSelectionPage(databaseHelper).show(primaryStage);
+        });
+
+        // Add all components to the layout.
+        layout.getChildren().addAll(
+            adminLabel,
+            continueButton,
+            roleField,
+            hoursValidField,
+            generateInviteButton,
+            inviteCodeLabel,
+            usernameField,
+            resetPasswordButton,
+            resetPasswordLabel,
+            logoutButton
+        );
+
+        // Create the scene and set it on the primary stage.
+        Scene adminScene = new Scene(layout, 800, 400);
+        primaryStage.setScene(adminScene);
+        primaryStage.setTitle("Admin Dashboard");
+        primaryStage.show();
+
+        System.out.println("✅ AdminHomePage UI should now be visible.");
     }
-    
-    
 }

@@ -4,15 +4,15 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
-
 import java.sql.SQLException;
-
-import databasePart1.*;
+import databasePart1.DatabaseHelper;
 import userNameRecognizerTestbed.UserNameRecognizer;
 import passwordEvaluationTestbed.PasswordEvaluator;
+import application.User;
+import application.UserLoginPage;
 
 /**
- * The SetupAdmin class handles the setup process for creating an administrator account.
+ * The AdminSetupPage class handles the setup process for creating an administrator account.
  * This is intended to be used by the first user to initialize the system with admin credentials.
  */
 public class AdminSetupPage {
@@ -74,10 +74,19 @@ public class AdminSetupPage {
                 // Create a new User object with admin role and register in the database
                 User user = new User(userName, password, "admin");
                 databaseHelper.register(user);
-                System.out.println("Administrator setup completed successfully.");
+                System.out.println("Administrator registered successfully.");
 
-                // Navigate to the Welcome Login Page
-                new WelcomeLoginPage(databaseHelper).show(primaryStage, user);
+                // Set all roles for the admin (for example purposes, the admin gets all roles)
+                databaseHelper.setUserRole(userName, "admin", true);
+                databaseHelper.setUserRole(userName, "student", true);
+                databaseHelper.setUserRole(userName, "instructor", true);
+                databaseHelper.setUserRole(userName, "staff", true);
+                databaseHelper.setUserRole(userName, "reviewer", true);
+
+                System.out.println("Administrator setup completed. Please log in with your new admin credentials.");
+
+                // Navigate to the login page
+                new UserLoginPage(databaseHelper).show(primaryStage);
             } catch (SQLException e) {
                 String dbErrorMessage = "Database error: " + e.getMessage();
                 System.err.println(dbErrorMessage);

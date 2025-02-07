@@ -37,8 +37,7 @@ public class InvitationPage {
         inviteCodeLabel.setStyle("-fx-font-size: 14px; -fx-font-style: italic;");
         
         showCodeButton.setOnAction(a -> {
-        	// Generate the invitation code using the databaseHelper and set it to the label
-            String invitationCode = databaseHelper.generateInvitationCode();
+            String invitationCode = databaseHelper.generateInvitationCode("user", 24); // Example: "user" role, valid for 24 hours
             inviteCodeLabel.setText(invitationCode);
         });
 	    

@@ -6,15 +6,17 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 
-import databasePart1.*;
+import databasePart1.DatabaseHelper;
 
 /**
  * The UserLoginPage class provides a login interface for users to access their accounts.
- * It validates the user's credentials and navigates to the appropriate page upon successful login.
+ * It validates the user's credentials and then ALWAYS displays a role-selection prompt
+ * (even if the user only has one role). The user can pick the role they want to log in as.
  */
 public class UserLoginPage {
-	
+
     private final DatabaseHelper databaseHelper;
 
     public UserLoginPage(DatabaseHelper databaseHelper) {
@@ -22,7 +24,10 @@ public class UserLoginPage {
     }
 
     public void show(Stage primaryStage) {
-    	// Input field for the user's userName, password
+        // Create the initial login form
+        VBox loginLayout = new VBox(10);
+        loginLayout.setStyle("-fx-padding: 20; -fx-alignment: center;");
+
         TextField userNameField = new TextField();
         userNameField.setPromptText("Enter userName");
         userNameField.setMaxWidth(250);
@@ -30,52 +35,130 @@ public class UserLoginPage {
         PasswordField passwordField = new PasswordField();
         passwordField.setPromptText("Enter Password");
         passwordField.setMaxWidth(250);
-        
-        // Label to display error messages
+
         Label errorLabel = new Label();
         errorLabel.setStyle("-fx-text-fill: red; -fx-font-size: 12px;");
 
-
         Button loginButton = new Button("Login");
-        
+
         loginButton.setOnAction(a -> {
-        	// Retrieve user inputs
             String userName = userNameField.getText();
             String password = passwordField.getText();
+
             try {
-            	User user=new User(userName, password, "");
-            	WelcomeLoginPage welcomeLoginPage = new WelcomeLoginPage(databaseHelper);
-            	
-            	// Retrieve the user's role from the database using userName
-            	String role = databaseHelper.getUserRole(userName);
-            	
-            	if(role!=null) {
-            		user.setRole(role);
-            		if(databaseHelper.login(user)) {
-            			welcomeLoginPage.show(primaryStage,user);
-            		}
-            		else {
-            			// Display an error if the login fails
-                        errorLabel.setText("Error logging in");
-            		}
-            	}
-            	else {
-            		// Display an error if the account does not exist
-                    errorLabel.setText("user account doesn't exists");
-            	}
-            	
+                // Create User object (role is blank initially)
+                User user = new User(userName, password, "");
+
+                // Retrieve the user's roles from the database
+                ArrayList<String> roles = databaseHelper.getUserRoles(userName);
+
+                if (roles.isEmpty()) {
+                    // User not found or no roles assigned
+                    errorLabel.setText("User account does not exist or does not have assigned roles.");
+                } else {
+                    // First, verify credentials
+                    boolean credentialsValid = databaseHelper.login(user);
+                    if (!credentialsValid) {
+                        errorLabel.setText("Error logging in (invalid credentials).");
+                        return;
+                    }
+
+                    // Debugging: Print retrieved roles
+                    System.out.println("Roles retrieved: " + roles);
+
+                    // Prompt the user to select their role
+                    displayRoleSelection(primaryStage, user, roles);
+                }
             } catch (SQLException e) {
                 System.err.println("Database error: " + e.getMessage());
                 e.printStackTrace();
-            } 
+            }
         });
 
-        VBox layout = new VBox(10);
-        layout.setStyle("-fx-padding: 20; -fx-alignment: center;");
-        layout.getChildren().addAll(userNameField, passwordField, loginButton, errorLabel);
+        loginLayout.getChildren().addAll(userNameField, passwordField, loginButton, errorLabel);
 
-        primaryStage.setScene(new Scene(layout, 800, 400));
+        // Create and set the scene
+        Scene loginScene = new Scene(loginLayout, 800, 400);
+        primaryStage.setScene(loginScene);
         primaryStage.setTitle("User Login");
         primaryStage.show();
+    }
+
+    /**
+     * Prompts the user to select their role before proceeding.
+     */
+    private void displayRoleSelection(Stage primaryStage, User user, ArrayList<String> roles) {
+        VBox roleLayout = new VBox(10);
+        roleLayout.setStyle("-fx-padding: 20; -fx-alignment: center;");
+
+        Label selectRoleLabel = new Label("Select a role to log in as:");
+
+        ComboBox<String> roleComboBox = new ComboBox<>();
+        roleComboBox.getItems().addAll(roles);
+
+        Label errorLabel = new Label();
+        errorLabel.setStyle("-fx-text-fill: red; -fx-font-size: 12px;");
+
+        Button confirmRoleButton = new Button("Confirm");
+        confirmRoleButton.setOnAction(e -> {
+            String selectedRole = roleComboBox.getValue();
+            if (selectedRole == null) {
+                errorLabel.setText("Please select a role.");
+                return;
+            }
+
+            try {
+                // Switch role in database and update user object
+                databaseHelper.switchRole(user.getUserName(), selectedRole);
+                user.setRole(selectedRole);
+
+                // Debugging: Confirm role switch
+                System.out.println("User role switched to: " + selectedRole);
+
+                // Navigate to the appropriate home page
+                navigateToRoleHome(primaryStage, user, selectedRole);
+            } catch (SQLException ex) {
+                System.err.println("Error switching roles: " + ex.getMessage());
+                ex.printStackTrace();
+            }
+        });
+
+        roleLayout.getChildren().addAll(selectRoleLabel, roleComboBox, confirmRoleButton, errorLabel);
+
+        Scene roleScene = new Scene(roleLayout, 800, 400);
+        primaryStage.setScene(roleScene);
+        primaryStage.setTitle("Select Role");
+        primaryStage.show();
+    }
+
+    /**
+     * Navigate the user to the correct home page based on role.
+     */
+    private void navigateToRoleHome(Stage primaryStage, User user, String role) {
+        switch (role) {
+            case "admin":
+                new AdminHomePage(databaseHelper, user.getUserName()).show(primaryStage);
+                break;
+            case "user":
+                try {
+                    new UserHomePage(databaseHelper, user.getUserName(), 
+                        databaseHelper.isTemporaryPassword(user.getUserName(), user.getPassword())
+                    ).show(primaryStage);
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+                break;
+            case "instructor":
+                new InstructorHomePage(databaseHelper).show(primaryStage);
+                break;
+            case "staff":
+                new StaffHomePage(databaseHelper).show(primaryStage);
+                break;
+            case "reviewer":
+                new ReviewerHomePage(databaseHelper).show(primaryStage);
+                break;
+            default:
+                System.err.println("Unknown role: " + role);
+        }
     }
 }
