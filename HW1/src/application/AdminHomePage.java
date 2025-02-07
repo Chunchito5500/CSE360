@@ -25,12 +25,23 @@ public class AdminHomePage {
 	    Label adminLabel = new Label("Hello, Admin!");
 	    
 	    adminLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
+	    
+	 // button to proceed to the main admin screen
+        Button continueButton = new Button("Continue");
+        continueButton.setOnAction(e -> {
+            // call another class that shows the main admin screen
+           AdminCommandsPage mainPage = new AdminCommandsPage();
+            mainPage.show(primaryStage);
+        });
 
-	    layout.getChildren().add(adminLabel);
+	    layout.getChildren().addAll(adminLabel, continueButton);
 	    Scene adminScene = new Scene(layout, 800, 400);
 
 	    // Set the scene to primary stage
 	    primaryStage.setScene(adminScene);
 	    primaryStage.setTitle("Admin Page");
+	    
     }
+    
+    
 }
