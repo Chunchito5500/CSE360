@@ -1,47 +1,47 @@
 package application;
 
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
+public class AdminCommandsPage {
 
-/**
- * AdminPage class represents the user interface for the admin user.
- * This page displays a simple welcome message for the admin.
- */
+	public void show(Stage primaryStage) {
+        VBox layout = new VBox(20);
+        layout.setStyle("-fx-alignment: center; -fx-padding: 20;");
+        Label headerLabel = new Label("Admin Main Functions");
+        headerLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
 
-public class AdminHomePage {
-	/**
-     * Displays the admin page in the provided primary stage.
-     * @param primaryStage The primary stage where the scene will be displayed.
-     */
-    public void show(Stage primaryStage) {
-    	VBox layout = new VBox();
-    	
-	    layout.setStyle("-fx-alignment: center; -fx-padding: 20;");
-	    
-	    // label to display the welcome message for the admin
-	    Label adminLabel = new Label("Hello, Admin!");
-	    
-	    adminLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
-	    
-	 // button to proceed to the main admin screen
-        Button continueButton = new Button("Continue");
-        continueButton.setOnAction(e -> {
-            // call another class that shows the main admin screen
-           AdminCommandsPage mainPage = new AdminCommandsPage();
-            mainPage.show(primaryStage);
+        
+        Button listAllUsersButton = new Button("List All Users");
+        listAllUsersButton.setOnAction(e -> {
+            // Put code here to show a list of users
+            // e.g., new AdminListUsersPage().show(primaryStage);
         });
 
-	    layout.getChildren().addAll(adminLabel, continueButton);
-	    Scene adminScene = new Scene(layout, 800, 400);
+        Button deleteUserButton = new Button("Delete User");
+        deleteUserButton.setOnAction(e -> {
+            // Put code here for delete user functionality
+        });
 
-	    // Set the scene to primary stage
-	    primaryStage.setScene(adminScene);
-	    primaryStage.setTitle("Admin Page");
-	    
+        // A back button to return to the AdminHomePage,
+        Button backButton = new Button("Back");
+        backButton.setOnAction(e -> {
+            // Return to the home page
+            new AdminHomePage().show(primaryStage);
+        });
+
+        layout.getChildren().addAll(
+            headerLabel,
+            listAllUsersButton,
+            deleteUserButton,
+            backButton
+        );
+
+        Scene scene = new Scene(layout, 800, 400);
+        primaryStage.setScene(scene);
+        primaryStage.setTitle("Admin Commands");
     }
-    
-    
 }
