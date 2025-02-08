@@ -5,6 +5,7 @@ import java.util.*;
 import java.util.UUID;
 import java.time.LocalDateTime;
 import application.User;
+import application.LoginCallback;
 
 public class DatabaseHelper {
 
@@ -25,6 +26,7 @@ public class DatabaseHelper {
 		try {
 			Class.forName(JDBC_DRIVER); // Load the JDBC driver
 			System.out.println("Connecting to database...");
+			
 			connection = DriverManager.getConnection(DB_URL, USER, PASS);
 			statement = connection.createStatement();
 			createTables();  // Create the necessary tables if they don't exist
@@ -35,12 +37,13 @@ public class DatabaseHelper {
 
 	private void createTables() throws SQLException {
 		// Merged table creation to support extra functionalities from the second code block
+	    
 		String userTable = "CREATE TABLE IF NOT EXISTS cse360users ("
 				+ "id INT AUTO_INCREMENT PRIMARY KEY, "
 				+ "userName VARCHAR(255) UNIQUE, "
 				+ "password VARCHAR(255), "
                 + "isTemporary BOOLEAN DEFAULT FALSE, "
-				+ "role VARCHAR(20), "
+				+ "role VARCHAR(100), "
 				+ "name VARCHAR(255), "
 			    + "email VARCHAR(255))";
 		statement.execute(userTable);
@@ -80,11 +83,29 @@ public class DatabaseHelper {
 			pstmt.setString(1, user.getUserName());
 			pstmt.setString(2, user.getPassword());
 			pstmt.setString(3, user.getRole());
+			
 			try (ResultSet rs = pstmt.executeQuery()) {
 				return rs.next();
 			}
 		}
 	}
+	
+	public void loginAsync(User user, LoginCallback callback) {
+	    new Thread(() -> {
+	        try {
+	            boolean valid = login(user);
+	            if (valid) {
+	       
+	                callback.onLoginSuccess(user);
+	            } else {
+	                callback.onLoginFailure("Invalid credentials.");
+	            }
+	        } catch (SQLException e) {
+	            callback.onLoginFailure("Database error: " + e.getMessage());
+	        }
+	    }).start();
+	}
+
 	
 	public boolean doesUserExist(String userName) {
 	    String query = "SELECT COUNT(*) FROM cse360users WHERE userName = ?";
