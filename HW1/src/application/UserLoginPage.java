@@ -1,14 +1,18 @@
 package application;
 
-import javafx.scene.Scene;
-import javafx.scene.control.*;
-import javafx.scene.layout.VBox;
-import javafx.stage.Stage;
-
 import java.sql.SQLException;
 import java.util.ArrayList;
 
 import databasePart1.DatabaseHelper;
+import javafx.application.Platform;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.PasswordField;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
 
 /**
  * The UserLoginPage class provides a login interface for users.
@@ -46,40 +50,40 @@ public class UserLoginPage {
             String userName = userNameField.getText();
             String password = passwordField.getText();
 
-            try {
-                // Create User object (role is blank initially)
-                User user = new User(userName, password, "");
+            User user = new User(userName, password, "");
 
-                // Retrieve the user's roles from the database
-                ArrayList<String> roles = databaseHelper.getUserRoles(userName);
-
-                if (roles.isEmpty()) {
-                    errorLabel.setText("User account does not exist or does not have assigned roles.");
-                } else {
-                    // First, verify credentials (username and password only)
-                    boolean credentialsValid = databaseHelper.login(user);
-                    if (!credentialsValid) {
-                        errorLabel.setText("Error logging in (invalid credentials).");
-                        return;
-                    }
-                    
-                    System.out.println("Roles retrieved: " + roles);
-
-                    // If only one role exists, automatically navigate to that role's home page.
-                    if (roles.size() == 1) {
-                        user.setRole(roles.get(0));
-                        System.out.println("Only one role found: " + roles.get(0) + ". Logging in automatically.");
-                        navigateToRoleHome(primaryStage, user, roles.get(0));
-                    } else {
-                        // More than one role: prompt the user to select one.
-                        displayRoleSelection(primaryStage, user, roles);
-                    }
+            // Call the asynchronous login method
+            databaseHelper.loginAsync(user, new LoginCallback() {
+                @Override
+                public void onLoginSuccess(User user) {
+                    // UI updates must run on the JavaFX Application Thread
+                    Platform.runLater(() -> {
+                        // Retrieve roles and continue to the role selection or home page
+                        try {
+                            ArrayList<String> roles = databaseHelper.getUserRoles(user.getUserName());
+                            if (roles.isEmpty()) {
+                                errorLabel.setText("User account does not have assigned roles.");
+                            } else if (roles.size() == 1) {
+                                user.setRole(roles.get(0));
+                                navigateToRoleHome(primaryStage, user, roles.get(0));
+                            } else {
+                                displayRoleSelection(primaryStage, user, roles);
+                            }
+                        } catch (SQLException ex) {
+                            errorLabel.setText("Error retrieving roles: " + ex.getMessage());
+                            ex.printStackTrace();
+                        }
+                    });
                 }
-            } catch (SQLException e) {
-                System.err.println("Database error: " + e.getMessage());
-                e.printStackTrace();
-            }
+
+                @Override
+                public void onLoginFailure(String errorMessage) {
+                    // UI updates must run on the JavaFX Application Thread
+                    Platform.runLater(() -> errorLabel.setText(errorMessage));
+                }
+            });
         });
+
 
         loginLayout.getChildren().addAll(userNameField, passwordField, loginButton, errorLabel);
 
@@ -141,7 +145,7 @@ public class UserLoginPage {
         System.out.println("Navigating to role: " + normalizedRole);
         switch (normalizedRole) {
             case "admin":
-                new AdminHomePage(databaseHelper, user.getUserName()).show(primaryStage);
+                new AdminHomePage(databaseHelper, user).show(primaryStage);
                 break;
             case "user":
                 try {
@@ -153,16 +157,16 @@ public class UserLoginPage {
                 }
                 break;
             case "instructor":
-                new InstructorHomePage(databaseHelper).show(primaryStage);
+         //       new InstructorHomePage(databaseHelper).show(primaryStage);
                 break;
             case "staff":
-                new StaffHomePage(databaseHelper).show(primaryStage);
+          //      new StaffHomePage(databaseHelper).show(primaryStage);
                 break;
             case "reviewer":
-                new ReviewerHomePage(databaseHelper).show(primaryStage);
+        //        new ReviewerHomePage(databaseHelper).show(primaryStage);
                 break;
             case "student":
-                new StudentPage(databaseHelper, user.getUserName()).show(primaryStage);
+        //        new StudentPage(databaseHelper, user.getUserName()).show(primaryStage);
                 break;
             default:
                 System.err.println("Unknown role: " + normalizedRole);
