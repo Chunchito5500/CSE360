@@ -7,20 +7,23 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-public class InstructorHomePage {
+public class StudentPage {
     private final DatabaseHelper databaseHelper;
+    private final String username;
     
-    public InstructorHomePage(DatabaseHelper databaseHelper) {
+    public StudentPage(DatabaseHelper databaseHelper, String username) {
         this.databaseHelper = databaseHelper;
+        this.username = username;
     }
     
     public void show(Stage primaryStage) {
         VBox layout = new VBox(10);
         layout.setStyle("-fx-alignment: center; -fx-padding: 20;");
         
-        Label welcomeLabel = new Label("Welcome, Instructor!");
+        Label welcomeLabel = new Label("Welcome, Student " + username + "!");
         welcomeLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
         
+        // Logout button to return to the login/setup selection page
         Button logoutButton = new Button("Logout");
         logoutButton.setOnAction(e -> {
             new SetupLoginSelectionPage(databaseHelper).show(primaryStage);
@@ -30,7 +33,7 @@ public class InstructorHomePage {
         
         Scene scene = new Scene(layout, 800, 400);
         primaryStage.setScene(scene);
-        primaryStage.setTitle("Instructor Page");
+        primaryStage.setTitle("Student Page");
         primaryStage.show();
     }
 }

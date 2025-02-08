@@ -22,7 +22,6 @@ public class AdminHomePage {
     public void show(Stage primaryStage) {
         System.out.println("✅ AdminHomePage.show() was called!");
 
-        // Create the main layout with spacing and padding.
         VBox layout = new VBox(10);
         layout.setStyle("-fx-alignment: center; -fx-padding: 20;");
 
@@ -30,7 +29,7 @@ public class AdminHomePage {
         Label adminLabel = new Label("Hello, Admin " + username + "!");
         adminLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
 
-        // Continue Button to navigate to the AdminCommandsPage.
+        // "Continue" Button to Navigate to AdminCommandsPage
         Button continueButton = new Button("Continue");
         continueButton.setOnAction(e -> {
             System.out.println("🟡 Navigating to AdminCommandsPage...");
@@ -39,7 +38,7 @@ public class AdminHomePage {
 
         // --- Invitation Code Generation Section ---
         TextField roleField = new TextField();
-        roleField.setPromptText("Enter Role (user/admin)");
+        roleField.setPromptText("Enter Role (admin, student, instructor, staff, reviewer)");
 
         TextField hoursValidField = new TextField();
         hoursValidField.setPromptText("Valid Hours");
@@ -51,8 +50,11 @@ public class AdminHomePage {
             String role = roleField.getText().trim();
             try {
                 int hours = Integer.parseInt(hoursValidField.getText().trim());
-                if (!role.equalsIgnoreCase("user") && !role.equalsIgnoreCase("admin")) {
-                    inviteCodeLabel.setText("⚠️ Invalid role! Must be 'user' or 'admin'.");
+                // Check that the entered role is one of the allowed roles.
+                if (!(role.equalsIgnoreCase("admin") || role.equalsIgnoreCase("student") ||
+                      role.equalsIgnoreCase("instructor") || role.equalsIgnoreCase("staff") ||
+                      role.equalsIgnoreCase("reviewer"))) {
+                    inviteCodeLabel.setText("⚠️ Invalid role! Must be one of: admin, student, instructor, staff, reviewer.");
                     return;
                 }
                 String invitationCode = databaseHelper.generateInvitationCode(role, hours);
@@ -90,28 +92,20 @@ public class AdminHomePage {
         });
 
         // --- Logout Button ---
-        // Using the SetupLoginSelectionPage so the admin returns to the login/setup selection screen.
         Button logoutButton = new Button("Logout");
         logoutButton.setOnAction(a -> {
             System.out.println("🔴 Logging out...");
             new SetupLoginSelectionPage(databaseHelper).show(primaryStage);
         });
 
-        // Add all components to the layout.
+        // Add all elements to layout
         layout.getChildren().addAll(
-            adminLabel,
-            continueButton,
-            roleField,
-            hoursValidField,
-            generateInviteButton,
-            inviteCodeLabel,
-            usernameField,
-            resetPasswordButton,
-            resetPasswordLabel,
-            logoutButton
+                adminLabel, continueButton,
+                roleField, hoursValidField, generateInviteButton, inviteCodeLabel,
+                usernameField, resetPasswordButton, resetPasswordLabel,
+                logoutButton
         );
 
-        // Create the scene and set it on the primary stage.
         Scene adminScene = new Scene(layout, 800, 400);
         primaryStage.setScene(adminScene);
         primaryStage.setTitle("Admin Dashboard");

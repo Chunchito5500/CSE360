@@ -3,11 +3,11 @@ package databasePart1;
 import java.sql.*;
 import java.util.UUID;
 import java.time.LocalDateTime;
-
 import application.User;
 import java.util.ArrayList;
-import java.util.Arrays; 
+import java.util.Arrays;
 import java.util.List;
+
 /**
  * The DatabaseHelper class is responsible for managing the connection to the database,
  * performing operations such as user registration, login validation, and handling invitation codes.
@@ -36,7 +36,6 @@ public class DatabaseHelper {
             e.printStackTrace();
         }
 
-        // Use the correct constants for connection parameters
         connection = DriverManager.getConnection(DB_URL, USER, PASS);
         System.out.println("Connected to database...");
 
@@ -49,12 +48,12 @@ public class DatabaseHelper {
      */
     private void createTables() throws SQLException {
         // Create cse360users table
-    	String userTable = "CREATE TABLE IF NOT EXISTS cse360users ("
-    	        + "id INT AUTO_INCREMENT PRIMARY KEY, "
-    	        + "userName VARCHAR(255) UNIQUE, "
-    	        + "password VARCHAR(255), "
-    	        + "isTemporary BOOLEAN DEFAULT FALSE, "
-    	        + "role VARCHAR(100))";
+        String userTable = "CREATE TABLE IF NOT EXISTS cse360users ("
+                + "id INT AUTO_INCREMENT PRIMARY KEY, "
+                + "userName VARCHAR(255) UNIQUE, "
+                + "password VARCHAR(255), "
+                + "isTemporary BOOLEAN DEFAULT FALSE, "
+                + "role VARCHAR(100))";  // Increased to 100 characters for multiple roles
         try (Statement stmt = connection.createStatement()) {
             stmt.executeUpdate(userTable);
         }
@@ -149,13 +148,11 @@ public class DatabaseHelper {
     public String generateOneTimePassword(String username) throws SQLException {
         String otp = UUID.randomUUID().toString().substring(0, 6);
         String query = "UPDATE cse360users SET password = ?, isTemporary = TRUE WHERE userName = ?";
-
         try (PreparedStatement pstmt = connection.prepareStatement(query)) {
             pstmt.setString(1, otp);
             pstmt.setString(2, username);
             pstmt.executeUpdate();
         }
-
         return otp;
     }
 
@@ -164,7 +161,6 @@ public class DatabaseHelper {
      */
     public void updateUserPassword(String username, String newPassword, boolean isTemporary) throws SQLException {
         String query = "UPDATE cse360users SET password = ?, isTemporary = ? WHERE userName = ?";
-
         try (PreparedStatement pstmt = connection.prepareStatement(query)) {
             pstmt.setString(1, newPassword);
             pstmt.setBoolean(2, isTemporary);
@@ -197,6 +193,10 @@ public class DatabaseHelper {
             pstmt.executeUpdate();
         }
     }
+
+    /**
+     * Retrieves the user roles as a list (splitting a comma-separated string).
+     */
     public ArrayList<String> getUserRoles(String userName) throws SQLException {
         ArrayList<String> roles = new ArrayList<>();
         String query = "SELECT role FROM cse360users WHERE userName = ?";
@@ -206,7 +206,6 @@ public class DatabaseHelper {
                 if (rs.next()) {
                     String roleField = rs.getString("role");
                     if (roleField != null && !roleField.trim().isEmpty()) {
-                        // Split by comma and trim each role
                         String[] splitRoles = roleField.split(",");
                         for (String r : splitRoles) {
                             roles.add(r.trim());
@@ -243,11 +242,9 @@ public class DatabaseHelper {
                 roles.add(role);
             }
         } else {
-            // Replace existing roles with the new role
             roles.clear();
             roles.add(role);
         }
-        // Join the roles back into a comma-separated string
         String rolesString = String.join(",", roles);
         String query = "UPDATE cse360users SET role = ? WHERE userName = ?";
         try (PreparedStatement pstmt = connection.prepareStatement(query)) {
@@ -256,13 +253,13 @@ public class DatabaseHelper {
             pstmt.executeUpdate();
         }
     }
+
     /**
      * Generates a new invitation code.
      */
     public String generateInvitationCode(String role, int validHours) {
         String code = UUID.randomUUID().toString().substring(0, 6);
         String insertCode = "INSERT INTO InvitationCodes (code, role, expiration) VALUES (?, ?, ?)";
-
         try (PreparedStatement pstmt = connection.prepareStatement(insertCode)) {
             pstmt.setString(1, code);
             pstmt.setString(2, role);
@@ -271,7 +268,6 @@ public class DatabaseHelper {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
         return code;
     }
 
@@ -308,7 +304,7 @@ public class DatabaseHelper {
     }
 
     /**
-     * Closes database connections.
+     * Closes the database connection.
      */
     public void closeConnection() {
         try {
@@ -317,6 +313,76 @@ public class DatabaseHelper {
             }
         } catch (SQLException e) {
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * Retrieves all users from the cse360users table.
+     * (This query selects only userName and role since fullName and email are not part of the schema.)
+     */
+    public ArrayList<User> getAllUsers() throws SQLException {
+        ArrayList<User> users = new ArrayList<>();
+        String query = "SELECT userName, role FROM cse360users";
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
+            while (rs.next()) {
+                String userName = rs.getString("userName");
+                String roles = rs.getString("role");
+                // Create a User object (assuming the User constructor accepts userName, password, role).
+                users.add(new User(userName, "", roles));
+            }
+        }
+        return users;
+    }
+
+    /**
+     * Deletes a user account.
+     * An account is not deleted if its role contains "admin".
+     */
+    public boolean deleteUser(String userName) throws SQLException {
+        String role = getUserRole(userName);
+        if (role != null && role.toLowerCase().contains("admin")) {
+            // Prevent deletion if the user is an admin.
+            return false;
+        }
+        String query = "DELETE FROM cse360users WHERE userName = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+            pstmt.setString(1, userName);
+            return pstmt.executeUpdate() > 0;
+        }
+    }
+
+    /**
+     * Removes a specific role from a user's role list.
+     * Returns false if attempting to remove "admin".
+     */
+    public boolean removeRole(String userName, String roleToRemove) throws SQLException {
+        ArrayList<String> roles = getUserRoles(userName);
+        if (roleToRemove.equalsIgnoreCase("admin")) {
+            return false;
+        }
+        if (roles.contains(roleToRemove)) {
+            roles.remove(roleToRemove);
+            String updatedRoles = String.join(",", roles);
+            String query = "UPDATE cse360users SET role = ? WHERE userName = ?";
+            try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+                pstmt.setString(1, updatedRoles);
+                pstmt.setString(2, userName);
+                return pstmt.executeUpdate() > 0;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Updates a user's roles with the provided comma-separated roles string.
+     */
+    public void updateUserRoles(String userName, String roles) throws SQLException {
+        String query = "UPDATE cse360users SET role = ? WHERE userName = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+            pstmt.setString(1, roles);
+            pstmt.setString(2, userName);
+            pstmt.executeUpdate();
         }
     }
 }

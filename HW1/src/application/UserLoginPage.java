@@ -11,9 +11,10 @@ import java.util.ArrayList;
 import databasePart1.DatabaseHelper;
 
 /**
- * The UserLoginPage class provides a login interface for users to access their accounts.
- * It validates the user's credentials and then ALWAYS displays a role-selection prompt
- * (even if the user only has one role). The user can pick the role they want to log in as.
+ * The UserLoginPage class provides a login interface for users.
+ * It validates credentials and then:
+ * - Automatically logs in users with only one role.
+ * - Prompts users with multiple roles to select one.
  */
 public class UserLoginPage {
 
@@ -53,21 +54,26 @@ public class UserLoginPage {
                 ArrayList<String> roles = databaseHelper.getUserRoles(userName);
 
                 if (roles.isEmpty()) {
-                    // User not found or no roles assigned
                     errorLabel.setText("User account does not exist or does not have assigned roles.");
                 } else {
-                    // First, verify credentials
+                    // First, verify credentials (username and password only)
                     boolean credentialsValid = databaseHelper.login(user);
                     if (!credentialsValid) {
                         errorLabel.setText("Error logging in (invalid credentials).");
                         return;
                     }
-
-                    // Debugging: Print retrieved roles
+                    
                     System.out.println("Roles retrieved: " + roles);
 
-                    // Prompt the user to select their role
-                    displayRoleSelection(primaryStage, user, roles);
+                    // If only one role exists, automatically navigate to that role's home page.
+                    if (roles.size() == 1) {
+                        user.setRole(roles.get(0));
+                        System.out.println("Only one role found: " + roles.get(0) + ". Logging in automatically.");
+                        navigateToRoleHome(primaryStage, user, roles.get(0));
+                    } else {
+                        // More than one role: prompt the user to select one.
+                        displayRoleSelection(primaryStage, user, roles);
+                    }
                 }
             } catch (SQLException e) {
                 System.err.println("Database error: " + e.getMessage());
@@ -77,7 +83,6 @@ public class UserLoginPage {
 
         loginLayout.getChildren().addAll(userNameField, passwordField, loginButton, errorLabel);
 
-        // Create and set the scene
         Scene loginScene = new Scene(loginLayout, 800, 400);
         primaryStage.setScene(loginScene);
         primaryStage.setTitle("User Login");
@@ -108,14 +113,10 @@ public class UserLoginPage {
             }
 
             try {
-                // Switch role in database and update user object
+                // Update the user's role in the database and in the user object
                 databaseHelper.switchRole(user.getUserName(), selectedRole);
                 user.setRole(selectedRole);
-
-                // Debugging: Confirm role switch
                 System.out.println("User role switched to: " + selectedRole);
-
-                // Navigate to the appropriate home page
                 navigateToRoleHome(primaryStage, user, selectedRole);
             } catch (SQLException ex) {
                 System.err.println("Error switching roles: " + ex.getMessage());
@@ -132,16 +133,19 @@ public class UserLoginPage {
     }
 
     /**
-     * Navigate the user to the correct home page based on role.
+     * Navigates the user to the correct home page based on their role.
      */
     private void navigateToRoleHome(Stage primaryStage, User user, String role) {
-        switch (role) {
+        // Normalize the role: trim whitespace and convert to lower case.
+        String normalizedRole = role.trim().toLowerCase();
+        System.out.println("Navigating to role: " + normalizedRole);
+        switch (normalizedRole) {
             case "admin":
                 new AdminHomePage(databaseHelper, user.getUserName()).show(primaryStage);
                 break;
             case "user":
                 try {
-                    new UserHomePage(databaseHelper, user.getUserName(), 
+                    new UserHomePage(databaseHelper, user.getUserName(),
                         databaseHelper.isTemporaryPassword(user.getUserName(), user.getPassword())
                     ).show(primaryStage);
                 } catch (SQLException e) {
@@ -157,8 +161,11 @@ public class UserLoginPage {
             case "reviewer":
                 new ReviewerHomePage(databaseHelper).show(primaryStage);
                 break;
+            case "student":
+                new StudentPage(databaseHelper, user.getUserName()).show(primaryStage);
+                break;
             default:
-                System.err.println("Unknown role: " + role);
+                System.err.println("Unknown role: " + normalizedRole);
         }
     }
 }
