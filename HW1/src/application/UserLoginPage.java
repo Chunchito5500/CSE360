@@ -75,7 +75,6 @@ public class UserLoginPage {
                         }
                     });
                 }
-
                 @Override
                 public void onLoginFailure(String errorMessage) {
                     // UI updates must run on the JavaFX Application Thread
