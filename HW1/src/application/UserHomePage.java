@@ -1,11 +1,16 @@
 package application;
 
+import java.sql.SQLException;
+
 import databasePart1.DatabaseHelper;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Label;
+import javafx.scene.control.PasswordField;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
-import java.sql.SQLException;
 
 /**
  * UserHomePage - Displays the user home page.
