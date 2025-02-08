@@ -12,11 +12,11 @@ import java.sql.SQLException;
  */
 public class AdminHomePage {
     private final DatabaseHelper databaseHelper;
-    private final String username;
+    private final User user;
 
-    public AdminHomePage(DatabaseHelper databaseHelper, String username) {
+    public AdminHomePage(DatabaseHelper databaseHelper, User user) {
         this.databaseHelper = databaseHelper;
-        this.username = username;
+        this.user = user;
     }
 
     public void show(Stage primaryStage) {
@@ -26,14 +26,15 @@ public class AdminHomePage {
         layout.setStyle("-fx-alignment: center; -fx-padding: 20;");
 
         // Admin Welcome Label
-        Label adminLabel = new Label("Hello, Admin " + username + "!");
+        Label adminLabel = new Label("Hello, Admin " + user.getUserName() + "!");
         adminLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
 
         // "Continue" Button to Navigate to AdminCommandsPage
         Button continueButton = new Button("Continue");
         continueButton.setOnAction(e -> {
             System.out.println("🟡 Navigating to AdminCommandsPage...");
-            new AdminCommandsPage(databaseHelper, username).show(primaryStage);
+            AdminCommandsPage mainPage = new AdminCommandsPage(databaseHelper, user);
+            mainPage.show(primaryStage);
         });
 
         // --- Invitation Code Generation Section ---
