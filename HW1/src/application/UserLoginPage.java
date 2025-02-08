@@ -14,12 +14,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-/**
- * The UserLoginPage class provides a login interface for users.
- * It validates credentials and then:
- * - Automatically logs in users with only one role.
- * - Prompts users with multiple roles to select one.
- */
+
 public class UserLoginPage {
 
     private final DatabaseHelper databaseHelper;
@@ -92,9 +87,7 @@ public class UserLoginPage {
         primaryStage.show();
     }
 
-    /**
-     * Prompts the user to select their role before proceeding.
-     */
+    
     private void displayRoleSelection(Stage primaryStage, User user, ArrayList<String> roles) {
         VBox roleLayout = new VBox(10);
         roleLayout.setStyle("-fx-padding: 20; -fx-alignment: center;");
@@ -135,9 +128,7 @@ public class UserLoginPage {
         primaryStage.show();
     }
 
-    /**
-     * Navigates the user to the correct home page based on their role.
-     */
+    
     private void navigateToRoleHome(Stage primaryStage, User user, String role) {
         // Normalize the role: trim whitespace and convert to lower case.
         String normalizedRole = role.trim().toLowerCase();
